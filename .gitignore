@@ -1,2 +1,4 @@
 
 *.suo
+/SchedulerServer/bin
+/SchedulerServer/obj
