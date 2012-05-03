@@ -100,6 +100,7 @@
     <Compile Include="TrayContext.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="MessageFormatter.cs" />
     <EmbeddedResource Include="MainWindow.resx">
       <DependentUpon>MainWindow.cs</DependentUpon>
     </EmbeddedResource>
@@ -114,6 +115,7 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <None Include="app.config" />
+    <None Include="ClassDiagram1.cd" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -126,6 +128,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="cache\" />
+    <Folder Include="log\" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

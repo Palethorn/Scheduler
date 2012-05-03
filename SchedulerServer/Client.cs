@@ -8,6 +8,7 @@ using System.Threading;
 using System.ComponentModel;
 using System.Data.Odbc;
 using System.Security.Cryptography;
+using System.Xml;
 namespace SchedulerServer
 {
     class Client
@@ -17,13 +18,16 @@ namespace SchedulerServer
         NetworkStream clientStream;
         DbAdapter adapter;
         XDocument xdoc;
-        BackgroundWorker backWorker;
+        ASCIIEncoding encoder;
+        MessageFormatter formatter;
         string sessionId;
+        string userId;
         public Client(TcpClient client)
         {
             singleton = Singleton.Instance;
             singleton.stopSockets += closeSocket;
-            backWorker = new BackgroundWorker();
+            encoder = new ASCIIEncoding();
+            formatter = new MessageFormatter();
             this.client = client;
             logIt();
             clientStream = client.GetStream();
@@ -40,55 +44,64 @@ namespace SchedulerServer
             byte[] stream = new byte[4096];
             string asciiString = "";
             int c = 0;
-            ASCIIEncoding encoder = new ASCIIEncoding();
-            clientStream.Read(stream, 0, 4096);
+            
             c = clientStream.Read(stream, 0, 4096);
             asciiString = encoder.GetString(stream, 0, c);
             singleton.log(asciiString);
             string content_length = "";
+            string reqType = "";
             try
             {
-                xdoc = XDocument.Parse(asciiString);
-                if(xdoc.Element("message").Attribute("type").Value == "header")
+                XDocument header = XDocument.Parse(asciiString);
+                if(header.Element("message").Attribute("type").Value == "header")
                 {
-                    content_length = xdoc.Element("message").Element("headers").Element("content_length").Value;
-                    readMessages(Int32.Parse(content_length));
+                    content_length = header.Element("message").Element("headers").Element("content_length").Value;
+                    reqType = header.Element("message").Element("headers").Element("request_type").Value;
+                    xdoc = readMessage(Int32.Parse(content_length), reqType);
+                    if (reqType == "login_request")
+                    {
+                        login(xdoc);
+                    }
                 }
             }
             catch (Exception e)
             {
                 singleton.log("Invalid header.");
+                Dictionary<string, string> keyValue = new Dictionary<string,string>();
+                XmlDocument error = formatter.createMessage("Invalid request", "error", "1");
+                keyValue.Add("content_length", error.ToString().Length.ToString());
+                keyValue.Add("message_type", "error");
+                XmlDocument header = formatter.createHeader(keyValue);
+                sendHeader(header);
+                sendMessage(error);
                 return false;
             }
             return true;
         }
-        public void readMessages(int contentSize)
+        public XDocument readMessage(int contentSize, string reqType)
         {
             byte[] stream = new byte[contentSize];
             string asciiString = "";
             int c = 0;
-            ASCIIEncoding encoder = new ASCIIEncoding();
-            clientStream.Read(stream, 0, contentSize);
+            //clientStream.Read(stream, 0, contentSize);
             c = clientStream.Read(stream, 0, contentSize);
             asciiString = encoder.GetString(stream, 0, c);
             singleton.log(asciiString);
             try
             {
                 xdoc = XDocument.Parse(asciiString);
-                if (xdoc.Element("message").Attribute("type").Value == "login_request")
-                {
-                    login(xdoc.Element("message").Element("user_login").Element("email").Value, xdoc.Element("message").Element("user_login").Element("password").Value);
-                }
             }
             catch (Exception e)
             {
                 singleton.log("Invalid xml.");
             }
+            return xdoc;
         }
-        public void login(string email, string password)
+        public void login(XDocument xdoc)
         {
-            OdbcDataReader r = adapter.executeQuery("select email, password from user where email=\'" + email + "\' and password=\'" + password + "\'");
-            ASCIIEncoding encoder = new ASCIIEncoding();
+            XElement email = xdoc.Element("message").Element("user_login").Element("email");
+            XElement password = xdoc.Element("message").Element("user_login").Element("password");
+            OdbcDataReader r = adapter.executeQuery("select email, password, iduser from user where email=\'" + email.Value + "\' and password=\'" + password.Value + "\'");
             if (adapter.affectedRows() == 1)
             {
                 while(r.Read())
@@ -99,12 +112,43 @@ namespace SchedulerServer
                     singleton.log(hashInput);
                     result = sha.ComputeHash(encoder.GetBytes(hashInput));
                     sessionId = Convert.ToBase64String(result);
+                    userId = r.GetValue(2).ToString();
                 }
             }
         }
-        public void addSchedule()
+        public void addTask()
         {
         
+        }
+        public void getTasks()
+        {
+            XmlDocument header;
+            XmlDocument doc;
+            OdbcDataReader r = adapter.executeQuery("select title, notes, startdatetime, enddatetime, place from task where fkuser=" + userId);
+            if (adapter.affectedRows() > 0)
+            {
+                doc = formatter.formatTasks(r);
+            }
+            else
+            {
+                doc = formatter.createMessage("Could not retrieve tasks", "error", "1");
+            }
+            Dictionary<string, string> keyValue = new Dictionary<string, string>();
+            keyValue.Add("content_length", doc.ToString().Length.ToString());
+            keyValue.Add("message_type", "tasks");
+            header = formatter.createHeader(keyValue);
+            sendHeader(header);
+            sendMessage(doc);
+        }
+        public void sendHeader(XmlDocument header)
+        {
+            byte[] hbytes = encoder.GetBytes(header.ToString());
+            clientStream.Write(hbytes, 0, hbytes.Length);
+        }
+        public void sendMessage(XmlDocument message)
+        {
+            byte[] mbytes = encoder.GetBytes(message.ToString());
+            clientStream.Write(mbytes, 0, mbytes.Length);
         }
         public void closeSocket()
         {

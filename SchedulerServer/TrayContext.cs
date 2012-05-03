@@ -15,7 +15,7 @@ namespace SchedulerServer
             this.MenuItems.Add(new MenuItem("Show main window", showMainWindow));
             this.MenuItems.Add(new MenuItem("Start server", startServer));
             this.MenuItems.Add(new MenuItem("Stop server", stopServer));
-            //this.MenuItems.Add(new MenuItem("Exit", exitApp));
+            this.MenuItems.Add(new MenuItem("Exit", exitApp));
         }
         public void showMainWindow(object sender, EventArgs args)
         {
@@ -28,6 +28,10 @@ namespace SchedulerServer
         public void stopServer(object sender, EventArgs args)
         {
             singleton.toggleServer(false);
+        }
+        public void exitApp(object sender, EventArgs args)
+        {
+        
         }
     }
 }
