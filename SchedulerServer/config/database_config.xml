@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<config>
+  <database_config odbc_driver="MySQL ODBC 5.1 Driver" option="3">
+    <schema>scheduler</schema>
+    <host>127.0.0.1</host>
+    <user>david</user>
+    <password>test</password>
+  </database_config>
+</config>
