@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Data.Odbc;
 using System.Security.Cryptography;
 using System.Xml;
+using System.IO;
 namespace SchedulerServer
 {
     class Client
@@ -20,6 +21,7 @@ namespace SchedulerServer
         XDocument xdoc;
         ASCIIEncoding encoder;
         MessageFormatter formatter;
+        StreamWriter sw;
         string sessionId;
         string userId;
         public Client(TcpClient client)
@@ -46,6 +48,11 @@ namespace SchedulerServer
             int c = 0;
             
             c = clientStream.Read(stream, 0, 4096);
+            if (c == 0)
+            {
+                singleton.log("client " + userId + " disconected");
+                return false;
+            }
             asciiString = encoder.GetString(stream, 0, c);
             singleton.log(asciiString);
             string content_length = "";
@@ -106,7 +113,7 @@ namespace SchedulerServer
             {
                 while(r.Read())
                 {
-                    SHA256 sha = new SHA256Managed();
+                    SHA512 sha = new SHA512Managed();
                     byte[] result;
                     string hashInput = r.GetValue(0).ToString() + r.GetValue(1).ToString() + DateTime.Now.ToString();
                     singleton.log(hashInput);
@@ -139,6 +146,17 @@ namespace SchedulerServer
             header = formatter.createHeader(keyValue);
             sendHeader(header);
             sendMessage(doc);
+            if (!File.Exists("../../../cache/" + userId + "/tasks.xml"))
+            {
+                writeCache(doc.ToString(), "../../../cache/" + userId + "/tasks.xml");
+            }
+        }
+        public void writeCache(string content, string filename)
+        {
+            sw = new StreamWriter(filename, false);
+            sw.Write(content);
+            sw.Flush();
+            sw.Close();
         }
         public void sendHeader(XmlDocument header)
         {
