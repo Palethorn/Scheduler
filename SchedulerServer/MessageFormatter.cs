@@ -4,78 +4,71 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Data.Odbc;
+using System.Xml.Linq;
 
 namespace SchedulerServer
 {
     class MessageFormatter
     {
-        XmlDocument xdoc;
-        XmlDocument header;
-        public XmlDocument createHeader(Dictionary<string, string> keyValue)
+        XDocument xdoc;
+        XDocument header;
+        public XDocument createHeader(Dictionary<string, string> keyValue)
         {
-            header = new XmlDocument();
-            XmlElement root = header.CreateElement("message");
-            XmlElement headers = header.CreateElement("headers");
-            XmlElement key;
+            header = new XDocument();
+            XElement root = new XElement("message");
+            XAttribute type = new XAttribute("type", "header");
+            root.Add(type);
+            XElement headers = new XElement("headers");
+            XElement key;
             foreach (string k in keyValue.Keys)
             {
-                key = header.CreateElement(k);
-                key.Value = keyValue[k];
-                headers.AppendChild(k);
+                key = new XElement(k, keyValue[k]);
+                headers.Add(key);
             }
-            root.AppendChild(headers);
-            header.AppendChild(root);
+            root.Add(headers);
+            header.Add(root);
             return header;
         }
-        public XmlDocument createMessage(string message, string messageType, string errStatus)
+        public XDocument createMessage(string message, string messageType, string errStatus)
         {
-            xdoc = new XmlDocument();
-            XmlElement root = xdoc.CreateElement("message");
-            XmlElement text = xdoc.CreateElement("text");
-            text.Value = message;
-            XmlAttribute type = xdoc.CreateAttribute("type");
-            type.Value = messageType;
-            XmlAttribute errorStatus = xdoc.CreateAttribute("error_status");
-            errorStatus.Value = errStatus;
-            root.Attributes.Append(type);
-            root.Attributes.Append(errorStatus);
-            root.AppendChild(text);
+            xdoc = new XDocument();
+            XElement root = new XElement("message");
+            XElement text = new XElement("text", message);
+            XAttribute type = new XAttribute("type", messageType);
+            XAttribute errorStatus = new XAttribute("error_status", errStatus);
+            root.Add(type);
+            root.Add(errorStatus);
+            root.Add(text);
+            xdoc.Add(root);
             return xdoc;
         }
-        public XmlDocument formatTasks(OdbcDataReader r)
+        public XDocument formatTasks(OdbcDataReader r)
         {
-            xdoc = new XmlDocument();
-            XmlElement title, notes, startdatetime, enddatetime, place;
-            XmlElement root = xdoc.CreateElement("message");
-            XmlAttribute type = xdoc.CreateAttribute("type");
-            XmlAttribute errorStatus = xdoc.CreateAttribute("error_status");
-            type.Value = "tasks";
-            root.Attributes.Append(type);
-            XmlElement tasks = xdoc.CreateElement("tasks");
+            xdoc = new XDocument();
+            XElement title, notes, startdatetime, enddatetime, place;
+            XElement root = new XElement("message");
+            XAttribute type = new XAttribute("type", "tasks");
+            XAttribute errorStatus = new XAttribute("error_status", "0");
+            root.Add(type);
+            XElement tasks = new XElement("tasks");
             while (r.Read())
             {
-                XmlElement task = xdoc.CreateElement("task");
-                title = xdoc.CreateElement("title");
-                title.Value = r.GetValue(0).ToString();
-                task.AppendChild(title);
-                notes = xdoc.CreateElement("notes");
-                notes.Value = r.GetValue(1).ToString();
-                task.AppendChild(notes);
-                startdatetime = xdoc.CreateElement("startdatetime");
-                startdatetime.Value = r.GetValue(2).ToString();
-                task.AppendChild(startdatetime);
-                enddatetime = xdoc.CreateElement("enddatetime");
-                enddatetime.Value = r.GetValue(3).ToString();
-                task.AppendChild(enddatetime);
-                place = xdoc.CreateElement("place");
-                place.Value = r.GetValue(4).ToString();
-                task.AppendChild(place);
-                tasks.AppendChild(task);
+                XElement task = new XElement("task");
+                title = new XElement("title", r.GetValue(0).ToString());
+                task.Add(title);
+                notes = new XElement("notes", r.GetValue(1).ToString());
+                task.Add(notes);
+                startdatetime = new XElement("startdatetime", r.GetValue(2).ToString());
+                task.Add(startdatetime);
+                enddatetime = new XElement("enddatetime", r.GetValue(3).ToString());
+                task.Add(enddatetime);
+                place = new XElement("place", r.GetValue(4).ToString());
+                task.Add(place);
+                tasks.Add(task);
             }
-            root.AppendChild(tasks);
-            errorStatus.Value = "0";
-            root.Attributes.Append(errorStatus);
-            xdoc.AppendChild(root);
+            root.Add(tasks);
+            root.Add(errorStatus);
+            xdoc.Add(root);
             return xdoc;
         }
     }
