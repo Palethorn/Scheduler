@@ -21,6 +21,7 @@ namespace SchedulerClient
     public partial class LoginPage : UserControl
     {
         Singleton singleton;
+        delegate void invoker();
         public LoginPage()
         {
             InitializeComponent();
@@ -38,7 +39,10 @@ namespace SchedulerClient
         }
         public void hide()
         {
-            this.Visibility = Visibility.Hidden;
+            this.Dispatcher.Invoke(new invoker(() =>
+                {
+                    this.Visibility = Visibility.Hidden;
+                }));
         }
         void clearInput(object sender, EventArgs args)
         {

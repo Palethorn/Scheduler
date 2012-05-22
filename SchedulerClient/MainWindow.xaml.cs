@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Diagnostics;
+using System.Threading;
 namespace SchedulerClient
 {
     /// <summary>
@@ -20,10 +21,13 @@ namespace SchedulerClient
     public partial class MainWindow : Window
     {
         Client client;
+        Thread listenThread;
         public MainWindow()
         {
             InitializeComponent();
             client = new Client("127.0.0.1", 50555);
+            listenThread = new Thread(new ParameterizedThreadStart(runThread));
+            listenThread.Start(client);
             Activated += changeFocusParams;
             Deactivated += changeFocusParams;
             LoginPage loginPage = new LoginPage();
@@ -35,6 +39,8 @@ namespace SchedulerClient
         }
         public void CloseApp(object sender, MouseButtonEventArgs args)
         {
+            client.close();
+            listenThread.Abort();
             this.Close();
         }
         public void StartDrag(object sender, MouseButtonEventArgs args)
@@ -51,6 +57,11 @@ namespace SchedulerClient
             {
                 Title.Foreground = new SolidColorBrush(Color.FromArgb(255, 73, 60, 45));
             }
+        }
+        public void runThread(object o)
+        {
+            Client c = o as Client;
+            c.readHeader();
         }
     }
 }

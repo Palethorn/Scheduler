@@ -15,5 +15,9 @@ namespace SchedulerClient
             tasks = new ObservableCollection<Task>();
             this.ItemsSource = tasks;
         }
+        public void parseTasks()
+        {
+            
+        }
     }
 }

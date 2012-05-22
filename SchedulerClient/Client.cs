@@ -14,7 +14,6 @@ namespace SchedulerClient
         NetworkStream clientStream;
         Singleton singleton;
         ASCIIEncoding encoder;
-        Thread thread;
         string messageType;
         string sessionId;
         MessageFormatter messageFormatter;
@@ -26,8 +25,6 @@ namespace SchedulerClient
             messageFormatter = new MessageFormatter();
             Connect(IPAddress.Parse(ip), port);
             clientStream = this.GetStream();
-            thread = new Thread(new ThreadStart(readHeader));
-            thread.Start();
         }
         public void readHeader()
         {
@@ -35,8 +32,12 @@ namespace SchedulerClient
             {
                 byte[] buffer = new byte[4096];
                 int c = clientStream.Read(buffer, 0, 4096);
-                string h = encoder.GetString(buffer);
-                XDocument header = XDocument.Parse(h);
+                if (c == 0)
+                {
+                    return;
+                }
+                string h = Encoding.UTF8.GetString(buffer);
+                XDocument header = XDocument.Parse(h.Replace("\0", ""));
                 if (header.Element("message").Attribute("type").Value == "header")
                 {
                     XElement headers = header.Element("message").Element("headers");
@@ -51,7 +52,7 @@ namespace SchedulerClient
                     }
                     if (headers.Element("message_type").Value == "login_status")
                     {
-                        if (xdoc.Element("message").Element("status").Value == "ok")
+                        if (xdoc.Element("message").Element("login_response").Element("status").Value == "ok")
                         {
                             singleton.loginCompleted();
                         }
@@ -80,6 +81,10 @@ namespace SchedulerClient
         {
             byte[] mbytes = encoder.GetBytes(message.ToString());
             clientStream.Write(mbytes, 0, mbytes.Length);
+        }
+        public void close()
+        {
+            this.Close();
         }
     }
 }

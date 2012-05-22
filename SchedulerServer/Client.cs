@@ -48,12 +48,16 @@ namespace SchedulerServer
             byte[] stream = new byte[4096];
             string asciiString = "";
             int c = 0;
-            
-            c = clientStream.Read(stream, 0, 4096);
+            try
+            {
+                c = clientStream.Read(stream, 0, 4096);
+            }
+            catch (Exception e)
+            { }
             
             if (c == 0)
             {
-                singleton.log("client " + userId + " disconected");
+                singleton.log("Client " + userId + " disconected");
                 return false;
             }
             
@@ -98,8 +102,6 @@ namespace SchedulerServer
             byte[] stream = new byte[contentSize];
             string asciiString = "";
             int c = 0;
-            
-            //clientStream.Read(stream, 0, contentSize);
             c = clientStream.Read(stream, 0, contentSize);
             asciiString = encoder.GetString(stream, 0, c);
             singleton.log(asciiString);
@@ -156,7 +158,7 @@ namespace SchedulerServer
                 root.Add(response);
                 doc.Add(root);
                 dict.Add("content_length", doc.ToString().Length.ToString());
-                dict.Add("mesage_type", "login_status");
+                dict.Add("message_type", "login_status");
                 header = formatter.createHeader(dict);
                 sendMessage(header);
                 sendMessage(doc);
@@ -237,7 +239,8 @@ namespace SchedulerServer
         }
         public void sendMessage(XDocument message)
         {
-            byte[] mbytes = encoder.GetBytes(message.ToString());
+
+            byte[] mbytes = Encoding.UTF8.GetBytes(message.ToString());
             clientStream.Write(mbytes, 0, mbytes.Length);
         }
         public void closeSocket()
