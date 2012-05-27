@@ -11,10 +11,10 @@ namespace SchedulerClient
         private Singleton()
         { }
         public DataTranferEvent addTasks;
-        public DataTranferEvent getTasks;
         public DataTranferEvent popup;
         public DataTranferEvent login;
         public Event loginCompleted;
+        public DataTranferEvent newTaskEvent;
         public static Singleton Instance
         {
             get

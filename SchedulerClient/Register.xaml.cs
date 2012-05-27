@@ -9,7 +9,6 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace SchedulerClient
@@ -17,9 +16,9 @@ namespace SchedulerClient
     /// <summary>
     /// Interaction logic for Register.xaml
     /// </summary>
-    public partial class RegisterPage : UserControl
+    public partial class Register : Window
     {
-        public RegisterPage()
+        public Register()
         {
             InitializeComponent();
         }
@@ -75,6 +74,17 @@ namespace SchedulerClient
                 {
                     pb.Password = "Password";
                 }
+            }
+        }
+        public void changeFocusParams(object sender, EventArgs args)
+        {
+            if (!IsActive)
+            {
+                Title.Foreground = new SolidColorBrush(Colors.White);
+            }
+            else
+            {
+                Title.Foreground = new SolidColorBrush(Color.FromArgb(255, 34, 103, 176));
             }
         }
     }

@@ -19,7 +19,6 @@ namespace SchedulerServer
         NetworkStream clientStream;
         DbAdapter adapter;
         XDocument xdoc;
-        ASCIIEncoding encoder;
         MessageFormatter formatter;
         StreamWriter sw;
         string sessionId;
@@ -29,13 +28,11 @@ namespace SchedulerServer
         {
             singleton = Singleton.Instance;
             singleton.stopSockets += closeSocket;
-            encoder = new ASCIIEncoding();
             formatter = new MessageFormatter();
             this.client = client;
             logIt();
             clientStream = client.GetStream();
             adapter = new DbAdapter();
-            cacheFolder = "../../../cache/" + userId + "/";
             while(readHeader());
         }
         public void logIt()
@@ -45,77 +42,75 @@ namespace SchedulerServer
         }
         public bool readHeader()
         {
-            byte[] stream = new byte[4096];
+            byte[] stream = new byte[1024];
             string asciiString = "";
             int c = 0;
             try
             {
-                c = clientStream.Read(stream, 0, 4096);
+                while (c < 1024)
+                {
+                    c += clientStream.Read(stream, 0, 1024);
+                    if (c == 0)
+                    {
+                        singleton.log("Client " + userId + " disconected");
+                        client.Close();
+                        return false;
+                    }
+                }
             }
             catch (Exception e)
-            { }
-            
-            if (c == 0)
             {
-                singleton.log("Client " + userId + " disconected");
                 return false;
             }
-            
-            asciiString = encoder.GetString(stream, 0, c);
+
+            asciiString = Encoding.UTF8.GetString(stream, 0, 1024);
             singleton.log(asciiString);
             string content_length = "";
             string reqType = "";
             
             try
             {
+                asciiString = asciiString.Replace("\0", "");
+                asciiString = asciiString.Replace("  ", "");
+                asciiString = asciiString.Replace(" <", "<");
                 XDocument header = XDocument.Parse(asciiString);
                 
                 if(header.Element("message").Attribute("type").Value == "header")
                 {
-                    content_length = header.Element("message").Element("headers").Element("content_length").Value;
                     reqType = header.Element("message").Element("headers").Element("request_type").Value;
                     
                     if (reqType == "login_request")
                     {
+                        content_length = header.Element("message").Element("headers").Element("content_length").Value;
                         xdoc = readMessage(Int32.Parse(content_length));
                         login(xdoc);
+                    }
+                    if (reqType == "tasks_request")
+                    {
+                        getTasks();
+                    }
+                    if (reqType == "new_task")
+                    {
+                        content_length = header.Element("message").Element("headers").Element("content_length").Value;
+                        xdoc = readMessage(Int32.Parse(content_length));
+                        addTask(xdoc);
                     }
                 }
             }
             catch (Exception e)
             {
                 singleton.log("Invalid header.");
-                Dictionary<string, string> keyValue = new Dictionary<string,string>();
-                XDocument error = formatter.createMessage("Invalid request", "error", "1");
-                keyValue.Add("content_length", error.ToString().Length.ToString());
-                keyValue.Add("message_type", "error");
-                XDocument header = formatter.createHeader(keyValue);
-                sendMessage(header);
-                sendMessage(error);
+                //Dictionary<string, string> keyValue = new Dictionary<string,string>();
+                //XDocument error = formatter.createMessage("Invalid request", "error", "1");
+                //keyValue.Add("content_length", error.ToString().Length.ToString());
+                //keyValue.Add("message_type", "error");
+                //XDocument header = formatter.createHeader(keyValue);
+                //sendHeader(header);
+                //sendMessage(error);
                 return true;
             }
             
             return true;
-        }
-        public XDocument readMessage(int contentSize)
-        {
-            byte[] stream = new byte[contentSize];
-            string asciiString = "";
-            int c = 0;
-            c = clientStream.Read(stream, 0, contentSize);
-            asciiString = encoder.GetString(stream, 0, c);
-            singleton.log(asciiString);
-            
-            try
-            {
-                xdoc = XDocument.Parse(asciiString);
-            }
-            catch (Exception e)
-            {
-                singleton.log("Invalid xml.");
-            }
-            
-            return xdoc;
         }
         public void login(XDocument xdoc)
         {
@@ -140,7 +135,7 @@ namespace SchedulerServer
                     byte[] result;
                     string hashInput = r.GetValue(0).ToString() + r.GetValue(1).ToString() + DateTime.Now.ToString();
                     singleton.log(hashInput);
-                    result = sha.ComputeHash(encoder.GetBytes(hashInput));
+                    result = sha.ComputeHash(Encoding.UTF8.GetBytes(hashInput));
                     sessionId = Convert.ToBase64String(result);
                     userId = r.GetValue(2).ToString();
 
@@ -149,6 +144,7 @@ namespace SchedulerServer
                     response.Add(status);
                     response.Add(session_id);
                 }
+                cacheFolder = "../../../cache/" + userId + "/";
             }
             else
             {
@@ -160,7 +156,7 @@ namespace SchedulerServer
                 dict.Add("content_length", doc.ToString().Length.ToString());
                 dict.Add("message_type", "login_status");
                 header = formatter.createHeader(dict);
-                sendMessage(header);
+                sendHeader(header);
                 sendMessage(doc);
         }
         public void addTask(XDocument xdoc)
@@ -175,8 +171,8 @@ namespace SchedulerServer
             string enddatetime = xdoc.Element("message").Element("task").Element("enddatetime") != null ? xdoc.Element("message").Element("task").Element("enddatetime").Value : "\'\'";
             string place = xdoc.Element("message").Element("task").Element("place") != null ? xdoc.Element("message").Element("task").Element("place").Value : "\'\'";
             
-            OdbcDataReader r = adapter.executeQuery("insert into task(title, notes, stardatetime, enddatetime, place) values(" + title + "," + notes + "," + startdatetime + "," + enddatetime + "," + place);
-            
+            OdbcDataReader r = adapter.executeQuery("insert into scheduler.task(title, notes, startdatetime, enddatetime, place) values(\'" + title + "\', \'" + notes + "\', \'" + startdatetime + "\', \'" + enddatetime + "\', \'" + place + "\')");
+            updateCache(xdoc.Element("message").Element("task"));
             if (adapter.affectedRows() > 0)
             {
                 message = formatter.createMessage("Task added.", "popup", "0");
@@ -191,8 +187,20 @@ namespace SchedulerServer
             }
             
             header = formatter.createHeader(headers);
-            sendMessage(header);
+            sendHeader(header);
             sendMessage(message);
+        }
+        public void updateCache(XElement task)
+        {
+            XDocument xdoc;
+            try
+            {
+                xdoc = XDocument.Load(cacheFolder + "tasks.xml");
+                xdoc.Element("message").Element("tasks").Add(task);
+                writeCache(xdoc.ToString(), cacheFolder + "tasks.xml");
+            }
+            catch(Exception e)
+            {}
         }
         public void getTasks()
         {
@@ -209,7 +217,7 @@ namespace SchedulerServer
                 }
                 else
                 {
-                    doc = formatter.createMessage("Could not retrieve tasks", "error", "1");
+                    doc = formatter.createMessage("No tasks added.", "error", "1");
                 }
             }
             else
@@ -227,20 +235,65 @@ namespace SchedulerServer
             keyValue.Add("content_length", doc.ToString().Length.ToString());
             keyValue.Add("message_type", "tasks");
             header = formatter.createHeader(keyValue);
-            sendMessage(header);
+            sendHeader(header);
             sendMessage(doc);
         }
         public void writeCache(string content, string filename)
         {
+            if (!Directory.Exists(cacheFolder))
+            {
+                Directory.CreateDirectory(cacheFolder);
+            }
             sw = new StreamWriter(filename, false);
             sw.Write(content);
             sw.Flush();
             sw.Close();
         }
+        public XDocument readMessage(int contentSize)
+        {
+            byte[] stream = new byte[contentSize];
+            string asciiString = "";
+            int c = 0;
+            while (c < contentSize)
+            {
+                c += clientStream.Read(stream, 0, contentSize);
+                if (c == 0)
+                {
+                    return new XDocument();
+                }
+            }
+            asciiString = Encoding.UTF8.GetString(stream, 0, contentSize);
+            singleton.log(asciiString);
+
+            try
+            {
+                asciiString = asciiString.Replace("\0", "");
+                asciiString = asciiString.Replace("  ", "");
+                asciiString = asciiString.Replace(" <", "<");
+                xdoc = XDocument.Parse(asciiString);
+            }
+            catch (Exception e)
+            {
+                singleton.log("Invalid xml.");
+            }
+
+            return xdoc;
+        }
+        public void sendHeader(XDocument header)
+        {
+            string headerString = header.ToString();
+            if (headerString.Length < 1024)
+            {
+                String emptyString = new String(' ', 1024 - headerString.Length);
+                headerString += emptyString;
+            }
+            byte[] mbytes = Encoding.UTF8.GetBytes(headerString);
+            clientStream.Write(mbytes, 0, mbytes.Length);
+        }
         public void sendMessage(XDocument message)
         {
-
-            byte[] mbytes = Encoding.UTF8.GetBytes(message.ToString());
+            string messageString = message.ToString();
+            byte[] mbytes = Encoding.UTF8.GetBytes(messageString);
             clientStream.Write(mbytes, 0, mbytes.Length);
         }
         public void closeSocket()

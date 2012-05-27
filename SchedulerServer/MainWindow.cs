@@ -33,6 +33,7 @@ namespace SchedulerServer
             Application.ApplicationExit += appExit;
             loadServerConfig();
             loadDatabaseConfig();
+            singleton.serverStart();
         }
         public void loadServerConfig()
         {

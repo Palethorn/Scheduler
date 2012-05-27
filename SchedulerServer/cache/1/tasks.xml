@@ -1,0 +1,18 @@
+<message type="tasks" error_status="0">
+  <tasks>
+    <task>
+      <title>Example</title>
+      <notes>Example notes</notes>
+      <startdatetime>01062012130000</startdatetime>
+      <enddatetime>10062012130000</enddatetime>
+      <place>Mostar</place>
+    </task>
+    <task>
+      <title>Test</title>
+      <startdatetime>DD05YYYY120000</startdatetime>
+      <enddatetime>DD05YYYY120000</enddatetime>
+      <notes>test</notes>
+      <place>Test</place>
+    </task>
+  </tasks>
+</message>

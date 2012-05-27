@@ -9,44 +9,25 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Diagnostics;
-using System.Threading;
+using System.Xml.Linq;
+
 namespace SchedulerClient
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for NewTask.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class NewTask : Window
     {
-        Client client;
-        Thread listenThread;
-        Tasks tasks;
         Singleton singleton;
-        public MainWindow()
+        MessageFormatter formatter;
+        public NewTask()
         {
             InitializeComponent();
             singleton = Singleton.Instance;
-            client = new Client("127.0.0.1", 50555);
-            listenThread = new Thread(new ParameterizedThreadStart(runThread));
-            listenThread.Start(client);
+            formatter = new MessageFormatter();
             Activated += changeFocusParams;
             Deactivated += changeFocusParams;
-            TasksContainer.Visibility = Visibility.Collapsed;
-            LoginPage loginPage = new LoginPage();
-            this.LoginPageContainer.Children.Add(loginPage);
-            singleton.loginCompleted += showTasksCanvas;
-        }
-        public void showTasksCanvas()
-        {
-                this.Dispatcher.Invoke(new Invoker(() =>
-                    {
-                        tasks = new Tasks();
-                        this.TasksContainer.Children.Add(tasks);
-                        LoginPageContainer.Visibility = Visibility.Collapsed;
-                        TasksContainer.Visibility = Visibility.Visible;
-                    }));
         }
         public void MinimizeWin(object sender, MouseButtonEventArgs args)
         {
@@ -54,9 +35,7 @@ namespace SchedulerClient
         }
         public void CloseApp(object sender, MouseButtonEventArgs args)
         {
-            client.close();
-            listenThread.Abort();
-            this.Close();
+            this.Visibility = Visibility.Collapsed;
         }
         public void StartDrag(object sender, MouseButtonEventArgs args)
         {
@@ -73,10 +52,20 @@ namespace SchedulerClient
                 Title.Foreground = new SolidColorBrush(Color.FromArgb(255, 34, 103, 176));
             }
         }
-        public void runThread(object o)
+        public void taskSubmit(object sender, RoutedEventArgs args)
         {
-            Client c = o as Client;
-            c.readHeader();
+            DateTime d1 = (DateTime)BeginDateInput.SelectedDate;
+            DateTime d2 = (DateTime)EndDateInput.SelectedDate;
+            Task t = new Task()
+            {
+                Title = TitleInput.Text,
+                StartTimeDate = d1.ToString("DDMMYYYYhhmmss"),
+                EndTimeDate = d2.ToString("DDMMYYYYhhmmss"),
+                Notes = NotesInput.Text,
+                Place = PlaceInput.Text
+            };
+            XDocument xdoc = formatter.formatTask(t);
+            singleton.newTaskEvent(xdoc);
         }
     }
 }

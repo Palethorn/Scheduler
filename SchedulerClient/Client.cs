@@ -14,49 +14,85 @@ namespace SchedulerClient
         NetworkStream clientStream;
         Singleton singleton;
         ASCIIEncoding encoder;
-        string messageType;
         string sessionId;
         MessageFormatter messageFormatter;
         public Client(string ip, int port):base()
         {
             singleton = Singleton.Instance;
             singleton.login += loginAction;
+            singleton.loginCompleted += getTasks;
+            singleton.newTaskEvent += submitTask;
             encoder = new ASCIIEncoding();
             messageFormatter = new MessageFormatter();
             Connect(IPAddress.Parse(ip), port);
             clientStream = this.GetStream();
         }
+        public void getTasks()
+        {
+            Dictionary<string, string> h = new Dictionary<string, string>();
+            h.Add("request_type", "tasks_request");
+            XDocument headers = messageFormatter.createHeader(h);
+            sendHeader(headers);
+        }
+        public void submitTask(XDocument t)
+        {
+            Dictionary<string, string> h = new Dictionary<string, string>();
+            h.Add("content_length", t.ToString().Length.ToString());
+            h.Add("request_type", "new_task");
+            XDocument header = messageFormatter.createHeader(h);
+            sendHeader(header);
+            sendMessage(t);
+        }
         public void readHeader()
         {
             while (true)
             {
-                byte[] buffer = new byte[4096];
-                int c = clientStream.Read(buffer, 0, 4096);
-                if (c == 0)
+                byte[] buffer = new byte[1024];
+                int c = 0;
+                while (c < 1024)
                 {
-                    return;
+                    c += clientStream.Read(buffer, 0, 1024);
+                    if (c == 0)
+                    {
+                        return;
+                    }
                 }
+                XDocument xdoc = new XDocument();
                 string h = Encoding.UTF8.GetString(buffer);
-                XDocument header = XDocument.Parse(h.Replace("\0", ""));
-                if (header.Element("message").Attribute("type").Value == "header")
+                h = h.Replace("\0", "");
+                h = h.Replace("  ", "");
+                h = h.Replace(" <", "<");
+                XDocument header = new XDocument();
+                try
                 {
-                    XElement headers = header.Element("message").Element("headers");
-                    XDocument xdoc = readMessage(Int32.Parse(headers.Element("content_length").Value));
-                    if (headers.Element("message_type").Value == "tasks")
+                    header = XDocument.Parse(h);
+                    if (header.Element("message").Attribute("type").Value == "header")
                     {
-                        singleton.addTasks(xdoc);
-                    }
-                    if (headers.Element("message_type").Value == "popup")
-                    {
-                        singleton.popup(xdoc);
-                    }
-                    if (headers.Element("message_type").Value == "login_status")
-                    {
-                        if (xdoc.Element("message").Element("login_response").Element("status").Value == "ok")
+                        XElement headers = header.Element("message").Element("headers");
+                        if (headers.Element("content_length") != null)
                         {
-                            singleton.loginCompleted();
+                            xdoc = readMessage(Int32.Parse(headers.Element("content_length").Value));
+                        }
+                        if (headers.Element("message_type").Value == "tasks")
+                        {
+                            singleton.addTasks(xdoc);
+                        }
+                        if (headers.Element("message_type").Value == "popup")
+                        {
+                            singleton.popup(xdoc);
+                        }
+                        if (headers.Element("message_type").Value == "login_status")
+                        {
+                            if (xdoc.Element("message").Element("login_response").Element("status").Value == "ok")
+                            {
+                                sessionId = xdoc.Element("message").Element("login_response").Element("status").Value;
+                                singleton.loginCompleted();
+                            }
                         }
                     }
+                }
+                catch
+                {
                 }
             }
         }
@@ -66,20 +102,43 @@ namespace SchedulerClient
             dict.Add("content_length", xdoc.ToString().Length.ToString());
             dict.Add("request_type", "login_request");
             XDocument header = messageFormatter.createHeader(dict);
-            sendMessage(header);
+            sendHeader(header);
             sendMessage(xdoc);
         }
         public XDocument readMessage(int count)
         {
             byte[] buffer = new byte[count];
-            clientStream.Read(buffer, 0, count);
-            string s = encoder.GetString(buffer);
+            int c = 0;
+            while (c < count)
+            {
+                c += clientStream.Read(buffer, 0, count);
+                if (c == 0)
+                {
+                    return new XDocument();
+                }
+            }
+            string s = Encoding.UTF8.GetString(buffer, 0, count);
+            s = s.Replace("\0", "");
+            s = s.Replace("  ", "");
+            s = s.Replace(" <", "<");
             XDocument xdoc = XDocument.Parse(s);
             return xdoc;
         }
+        public void sendHeader(XDocument message)
+        {
+            string messageString = message.ToString();
+            if (messageString.Length < 1024)
+            {
+                String emptyString = new String(' ', 1024 - messageString.Length);
+                messageString += emptyString;
+            }
+            byte[] mbytes = Encoding.UTF8.GetBytes(messageString);
+            clientStream.Write(mbytes, 0, mbytes.Length);
+        }
         public void sendMessage(XDocument message)
         {
-            byte[] mbytes = encoder.GetBytes(message.ToString());
+            string messageString = message.ToString();
+            byte[] mbytes = Encoding.UTF8.GetBytes(messageString);
             clientStream.Write(mbytes, 0, mbytes.Length);
         }
         public void close()

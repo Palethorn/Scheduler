@@ -6,7 +6,7 @@
         <Style x:Key="WindowTitle" TargetType="TextBlock" x:Name="WindowTitle">
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="9" ShadowDepth="0" Direction="350" Color="#FF493c2d"/>
+                    <DropShadowEffect BlurRadius="9" ShadowDepth="0" Direction="350" Color="#FF3195ff"/>
                 </Setter.Value>
             </Setter>
             <Setter Property="FontSize" Value="16"></Setter>
@@ -14,7 +14,7 @@
             <Setter Property="TextAlignment" Value="Left"></Setter>
             <Setter Property="VerticalAlignment" Value="Center"></Setter>
             <Setter Property="HorizontalAlignment" Value="Center"></Setter>
-            <Setter Property="Foreground" Value="#FFB5A99A"></Setter>
+            <Setter Property="Foreground" Value="#FF2267b0"></Setter>
         </Style>
         <Style x:Key="WindowStyle" TargetType="{x:Type Border}">
             <Setter Property="Effect">
@@ -22,19 +22,24 @@
                     <DropShadowEffect BlurRadius="10" Direction="315" ShadowDepth="2" Color="Black" Opacity="0.85"></DropShadowEffect>
                 </Setter.Value>
             </Setter>
-            <Setter Property="Background">
-                <Setter.Value>
+            <Setter Property="Width" Value="500"></Setter>
+            <Setter Property="Height" Value="400"></Setter>
+            <Setter Property="BorderBrush" Value="White"></Setter>
+            <Setter Property="BorderThickness" Value="1"></Setter>
+            <Setter Property="Background" Value="Black">
+                <!--<Setter.Value>
                     <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                         <GradientStop Color="White" Offset="0"/>
                         <GradientStop Color="#FF644929" Offset="0.733"/>
                         <GradientStop Color="#FFB5A99A" Offset="0.112"/>
                     </LinearGradientBrush>
-                </Setter.Value>
+                </Setter.Value>-->
             </Setter>
+            <Setter Property="Opacity" Value="0.85"></Setter>
             <Setter Property="CornerRadius" Value="10" />
         </Style>
         <Style x:Key="Links" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#FF493c2d"></Setter>
+            <Setter Property="Foreground" Value="White"></Setter>
             <Setter Property="FontSize" Value="13.333"></Setter>
             <Setter Property="HorizontalAlignment" Value="Center"></Setter>
             <Setter Property="VerticalAlignment" Value="Center"></Setter>
@@ -42,7 +47,7 @@
             <Setter Property="TextAlignment" Value="Center"></Setter>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="5" ShadowDepth="0" Direction="350" Color="Black" Opacity="0"/>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="0" Direction="350" Color="#FF2267b0" Opacity="0"/>
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
@@ -50,6 +55,7 @@
                     <BeginStoryboard>
                         <Storyboard>
                             <DoubleAnimation Storyboard.TargetProperty="Effect.Opacity" From="0.0" To="1.0" Duration="0:0:0.1" />
+                            <ColorAnimation Storyboard.TargetProperty="(Foreground).(SolidColorBrush.Color)" To="#FF2267b0" Duration="0:0:0.1"></ColorAnimation>
                         </Storyboard>
                     </BeginStoryboard>
                 </EventTrigger>
@@ -57,6 +63,7 @@
                     <BeginStoryboard>
                         <Storyboard>
                             <DoubleAnimation Storyboard.TargetProperty="Effect.Opacity" From="1.0" To="0.0" Duration="0:0:0.1" />
+                            <ColorAnimation Storyboard.TargetProperty="(Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.1"></ColorAnimation>
                         </Storyboard>
                     </BeginStoryboard>
                 </EventTrigger>
@@ -64,14 +71,16 @@
         </Style>
         <Style TargetType="Border" x:Key="TaskCanvas">
             <Setter Property="CornerRadius" Value="5"></Setter>
-            <Setter Property="Width" Value="380"></Setter>
-            <Setter Property="Height" Value="72"></Setter>
-            <Setter Property="Canvas.Left" Value="20"></Setter>
+            <Setter Property="Width" Value="483"></Setter>
+            <Setter Property="Height" Value="92"></Setter>
+            <Setter Property="Canvas.Left" Value="10"></Setter>
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="White"></Setter>
             <Setter Property="Background">
                 <Setter.Value>
                     <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                         <GradientStop Offset="0" Color="White"></GradientStop>
-                        <GradientStop Offset="0.5" Color="#00FFFFFF"></GradientStop>
+                        <GradientStop Offset="0.20" Color="#00FFFFFF"></GradientStop>
                     </LinearGradientBrush>
                 </Setter.Value>
             </Setter>

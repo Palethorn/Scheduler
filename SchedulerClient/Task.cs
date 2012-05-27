@@ -5,7 +5,7 @@ using System.Text;
 
 namespace SchedulerClient
 {
-    class Task
+    public class Task
     {
         public string Title
         { get; set; }
@@ -19,7 +19,7 @@ namespace SchedulerClient
         { get; set; }
         public int Index
         { get; set; }
-        public float Top
+        public double Top
         { get; set; }
     }
 }

@@ -19,9 +19,16 @@ namespace SchedulerClient
     /// </summary>
     public partial class Tasks : UserControl
     {
+        NewTask newTaskWindow;
         public Tasks()
         {
             InitializeComponent();
+            newTaskWindow = new NewTask();
+            newTaskWindow.Visibility = Visibility.Collapsed;
+        }
+        public void openNewTaskWindow(object sender, RoutedEventArgs args)
+        {
+            newTaskWindow.Visibility = Visibility.Visible;
         }
     }
 }
