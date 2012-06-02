@@ -23,7 +23,7 @@
                 </DataTemplate>
             </cl:TaskItemsControl.ItemTemplate>
         </cl:TaskItemsControl>
-        <Canvas Width="28" Height="28" Background="Transparent" Canvas.Bottom="30" Canvas.Left="30">
+        <Canvas Width="28" Height="28" Background="Transparent" Canvas.Bottom="10" Canvas.Left="5">
             <Ellipse Width="28" Height="28" Stroke="White" StrokeThickness="1">
             </Ellipse>
             <TextBlock Width="28" Height="28" Foreground="White" Text="+" FontWeight="Bold" Style="{StaticResource Links}" FontSize="18" MouseUp="openNewTaskWindow" />

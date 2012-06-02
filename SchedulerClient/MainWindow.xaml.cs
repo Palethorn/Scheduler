@@ -24,6 +24,7 @@ namespace SchedulerClient
         Thread listenThread;
         Tasks tasks;
         Singleton singleton;
+        Register register;
         public MainWindow()
         {
             InitializeComponent();
@@ -36,6 +37,8 @@ namespace SchedulerClient
             TasksContainer.Visibility = Visibility.Collapsed;
             LoginPage loginPage = new LoginPage();
             this.LoginPageContainer.Children.Add(loginPage);
+            register = new Register();
+            register.Visibility = Visibility.Visible;
             singleton.loginCompleted += showTasksCanvas;
         }
         public void showTasksCanvas()

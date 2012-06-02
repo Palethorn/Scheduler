@@ -87,5 +87,17 @@ namespace SchedulerClient
                 Title.Foreground = new SolidColorBrush(Color.FromArgb(255, 34, 103, 176));
             }
         }
+        public void MinimizeWin(object sender, MouseButtonEventArgs args)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+        public void Close(object sender, MouseButtonEventArgs args)
+        {
+            this.Visibility = Visibility.Collapsed;
+        }
+        public void StartDrag(object sender, MouseButtonEventArgs args)
+        {
+            this.DragMove();
+        }
     }
 }
