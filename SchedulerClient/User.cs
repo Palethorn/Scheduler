@@ -11,5 +11,12 @@ namespace SchedulerClient
         public string LastName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
+        public User()
+        {
+            FirstName = "First name";
+            LastName = "Last name";
+            Email = "Email: example@domain.com";
+            Password = "Password";
+        }
     }
 }

@@ -5,24 +5,31 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              xmlns:cl="clr-namespace:SchedulerClient"
-             d:DesignHeight="372" d:DesignWidth="483" Background="Transparent" Width="483" Height="372">
+             d:DesignHeight="372" d:DesignWidth="483" Background="Transparent" Width="483" Height="350">
     <Canvas x:Name="LayoutRoot" Background="Transparent" Width="483" Height="372">
-        <cl:TaskItemsControl Height="372" Width="483">
-            <cl:TaskItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Canvas Width="483" Height="70">
-                        <Border Canvas.Left="2" Canvas.Top="{Binding Top}" Style="{StaticResource TaskCanvas}" Opacity="0.75">
-                            <Canvas Background="Transparent" Height="70" Width="483">
-                                <TextBlock HorizontalAlignment="Center" Canvas.Top="2" Height="22" FontSize="16" FontWeight="Bold" Foreground="#FF2267b0" Text="{Binding Path=Title}"/>
-                                <TextBlock Canvas.Top="24" Height="22" Canvas.Left="2" Foreground="White" Text="{Binding Path=StartTimeDate}" />
-                                <TextBlock Canvas.Top="46" Canvas.Left="2" Foreground="White" Text="{Binding Path=EndTimeDate}" />
-                                <TextBlock Canvas.Top="2" x:Name="DeleteTaskLnk" Style="{StaticResource Links}" Text="X" FontWeight="Bold" Foreground="#FF2267b0" Canvas.Left="465" />
-                            </Canvas>
-                        </Border>
-                    </Canvas>
-                </DataTemplate>
-            </cl:TaskItemsControl.ItemTemplate>
-        </cl:TaskItemsControl>
+        <Canvas>
+            <Canvas.Clip>
+                <RectangleGeometry Rect="0, 0, 480, 330">
+                </RectangleGeometry>
+            </Canvas.Clip>
+            <cl:TaskItemsControl Width="483" Canvas.Top="0" Canvas.Left="0" x:Name="tasksItemsControl">
+                <cl:TaskItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Canvas Width="480" Height="70" MouseUp="ShowTask">
+                            <Border Canvas.Left="2" Canvas.Top="{Binding Top}" Style="{StaticResource TaskCanvas}" Opacity="0.75">
+                                <Canvas Background="Transparent" Height="70" Width="480">
+                                    <TextBlock HorizontalAlignment="Center" Canvas.Top="2" Height="22" FontSize="16" FontWeight="Bold" Foreground="#FF2267b0" Text="{Binding Path=Title}"/>
+                                    <TextBlock Foreground="White" Height="22" Canvas.Top="24" Width="55" Canvas.Left="2" Text="Start date:" TextAlignment="Right"></TextBlock>
+                                    <TextBlock Canvas.Top="24" Height="22" Canvas.Left="60" Foreground="White" Text="{Binding StartTimeDate}" />
+                                    <TextBlock Foreground="White" Height="22" Canvas.Top="46" Width="55" Canvas.Left="2" Text="End date:" TextAlignment="Right" ></TextBlock>
+                                    <TextBlock Canvas.Top="46" Canvas.Left="60" Foreground="White" Text="{Binding EndTimeDate}" />
+                                </Canvas>
+                            </Border>
+                        </Canvas>
+                    </DataTemplate>
+                </cl:TaskItemsControl.ItemTemplate>
+            </cl:TaskItemsControl>
+        </Canvas>
         <Canvas Width="28" Height="28" Background="Transparent" Canvas.Bottom="10" Canvas.Left="5">
             <Ellipse Width="28" Height="28" Stroke="White" StrokeThickness="1">
             </Ellipse>

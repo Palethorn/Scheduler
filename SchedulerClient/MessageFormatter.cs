@@ -28,18 +28,20 @@ namespace SchedulerClient
             header.Add(root);
             return header;
         }
-        public XDocument formatTask(Task t)
+        public XDocument formatTask(Task t, string messageType = "new_task")
         {
             xdoc = new XDocument();
             XElement root = new XElement("message");
-            XAttribute type = new XAttribute("type", "new_task");
+            XAttribute type = new XAttribute("type", messageType);
             root.Add(type);
             XElement task = new XElement("task");
+            XElement id = new XElement("id", t.Id);
             XElement title = new XElement("title", t.Title);
             XElement startdatetime = new XElement("startdatetime", t.StartTimeDate);
             XElement enddatetime = new XElement("enddatetime", t.EndTimeDate);
             XElement notes = new XElement("notes", t.Notes);
             XElement place = new XElement("place", t.Place);
+            task.Add(id);
             task.Add(title);
             task.Add(startdatetime);
             task.Add(enddatetime);

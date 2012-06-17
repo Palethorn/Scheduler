@@ -13,11 +13,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Media.Animation;
 namespace SchedulerClient
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         Client client;
@@ -25,21 +23,39 @@ namespace SchedulerClient
         Tasks tasks;
         Singleton singleton;
         Register register;
+        PopupWindow popupWindow;
         public MainWindow()
         {
             InitializeComponent();
             singleton = Singleton.Instance;
-            client = new Client("127.0.0.1", 50555);
-            listenThread = new Thread(new ParameterizedThreadStart(runThread));
-            listenThread.Start(client);
+            singleton.Connect += connect;
             Activated += changeFocusParams;
             Deactivated += changeFocusParams;
             TasksContainer.Visibility = Visibility.Collapsed;
             LoginPage loginPage = new LoginPage();
             this.LoginPageContainer.Children.Add(loginPage);
             register = new Register();
-            register.Visibility = Visibility.Visible;
+            //register.Visibility = Visibility.Visible;
+            this.Loaded += afterLoad;
+            popupWindow = new PopupWindow();
             singleton.loginCompleted += showTasksCanvas;
+        }
+        public void afterLoad(object sender, EventArgs args)
+        {
+            popupWindow.Owner = this;
+        }
+        public void connect()
+        {
+            try
+            {
+                client = new Client("127.0.0.1", 50555);
+                listenThread = new Thread(new ParameterizedThreadStart(runThread));
+                listenThread.Start(client);
+            }
+            catch
+            {
+                singleton.popup("Couldn't connect to server", 1);
+            }
         }
         public void showTasksCanvas()
         {
@@ -57,8 +73,15 @@ namespace SchedulerClient
         }
         public void CloseApp(object sender, MouseButtonEventArgs args)
         {
-            client.close();
-            listenThread.Abort();
+            if (client != null)
+            {
+                client.close();
+            }
+            if (listenThread != null)
+            {
+                listenThread.Abort();
+            }
+            singleton.exitApp();
             this.Close();
         }
         public void StartDrag(object sender, MouseButtonEventArgs args)

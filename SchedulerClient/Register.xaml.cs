@@ -10,6 +10,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 
 namespace SchedulerClient
 {
@@ -18,9 +19,13 @@ namespace SchedulerClient
     /// </summary>
     public partial class Register : Window
     {
+        User user;
+        Singleton singleton;
         public Register()
         {
             InitializeComponent();
+            singleton = Singleton.Instance;
+            singleton.exitApp += closeThis;
         }
         public void ClearInput(object sender, EventArgs args)
         {
@@ -64,7 +69,7 @@ namespace SchedulerClient
                 }
                 if (tb.Name == "EmailInput" && tb.Text == "")
                 {
-                    tb.Text = "Email";
+                    tb.Text = "Email: example@domain.com";
                 }
             }
             else
@@ -98,6 +103,29 @@ namespace SchedulerClient
         public void StartDrag(object sender, MouseButtonEventArgs args)
         {
             this.DragMove();
+        }
+        public void register(object sender, RoutedEventArgs args)
+        {
+            XDocument xdoc = new XDocument();
+            XElement root = new XElement("message");
+            XAttribute messageType = new XAttribute("type", "register_request");
+            root.Add(messageType);
+            XElement user = new XElement("user");
+            root.Add(user);
+            XElement firstName = new XElement("first_name", NameInput.Text);
+            user.Add(firstName);
+            XElement lastName = new XElement("last_name", LastNameInput.Text);
+            user.Add(lastName);
+            XElement email = new XElement("email", EmailInput.Text);
+            user.Add(email);
+            XElement password = new XElement("password", PasswordInput.Password);
+            user.Add(password);
+            xdoc.Add(root);
+            singleton.registerEvent(xdoc);
+        }
+        public void closeThis()
+        {
+            this.Close();
         }
     }
 }

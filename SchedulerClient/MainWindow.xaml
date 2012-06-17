@@ -19,11 +19,8 @@
                 <TextBlock x:Name="MinimizeLnk" Style="{StaticResource Links}" MouseUp="MinimizeWin" Text="_" Grid.Column="1" Width="20" VerticalAlignment="Stretch" FontWeight="Normal" />
             </Grid>
             <Canvas x:Name="LoginPageContainer" />
-            <Canvas x:Name="TasksContainer" Width="490" Canvas.Left="5" Canvas.Top="28" Height="370" />
-            <Canvas.Clip>
-                <RectangleGeometry Rect="0, 0, 490, 400">
-                </RectangleGeometry>
-            </Canvas.Clip>
+            <Canvas x:Name="TasksContainer" Width="490" Canvas.Left="5" Canvas.Top="28" Height="370">
+            </Canvas>
         </Canvas>
     </Border>
 </Window>

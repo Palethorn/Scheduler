@@ -45,7 +45,7 @@ namespace SchedulerServer
         public XDocument formatTasks(OdbcDataReader r)
         {
             xdoc = new XDocument();
-            XElement title, notes, startdatetime, enddatetime, place;
+            XElement title, notes, startdatetime, enddatetime, place, id;
             XElement root = new XElement("message");
             XAttribute type = new XAttribute("type", "tasks");
             XAttribute errorStatus = new XAttribute("error_status", "0");
@@ -54,15 +54,17 @@ namespace SchedulerServer
             while (r.Read())
             {
                 XElement task = new XElement("task");
-                title = new XElement("title", r.GetValue(0).ToString());
+                id = new XElement("id", r.GetValue(0).ToString());
+                task.Add(id);
+                title = new XElement("title", r.GetValue(1).ToString());
                 task.Add(title);
-                notes = new XElement("notes", r.GetValue(1).ToString());
+                notes = new XElement("notes", r.GetValue(2).ToString());
                 task.Add(notes);
-                startdatetime = new XElement("startdatetime", r.GetValue(2).ToString());
+                startdatetime = new XElement("startdatetime", r.GetValue(3).ToString());
                 task.Add(startdatetime);
-                enddatetime = new XElement("enddatetime", r.GetValue(3).ToString());
+                enddatetime = new XElement("enddatetime", r.GetValue(4).ToString());
                 task.Add(enddatetime);
-                place = new XElement("place", r.GetValue(4).ToString());
+                place = new XElement("place", r.GetValue(5).ToString());
                 task.Add(place);
                 tasks.Add(task);
             }

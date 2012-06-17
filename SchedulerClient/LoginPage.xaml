@@ -21,6 +21,6 @@
         <TextBlock Height="23" Style="{StaticResource WindowTitle}" HorizontalAlignment="Center" Name="LoginTitle" Text="Sign in" VerticalAlignment="Center"/>
         <TextBox Grid.Row="1" Height="30" HorizontalAlignment="Center" Text="Email" Name="EmailInput" VerticalAlignment="Center" Width="211" TabIndex="0" />
         <PasswordBox Grid.Row="2" Height="30" HorizontalAlignment="Center" Password="Password" Name="PasswordInput" VerticalAlignment="Center" Width="211" TabIndex="1" />
-        <TextBlock Grid.Row="3" Style="{StaticResource Links}" FontSize="12" HorizontalAlignment="Right" Height="23" Name="RegisterLnk" Foreground="White" Text="Register" Margin="0,27,44,25" />
+        <TextBlock Grid.Row="3" Style="{StaticResource Links}" FontSize="12" HorizontalAlignment="Right" Height="23" Name="RegisterLnk" Text="Register" Margin="0,27,44,25" />
     </Grid>
 </UserControl>

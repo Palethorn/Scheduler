@@ -28,15 +28,16 @@ namespace SchedulerServer
             while (true)
             {
                 TcpClient client = this.AcceptTcpClient();
-                Client c = new Client(client);
                 Thread t = new Thread(new ParameterizedThreadStart(handleClient));
                 threads.Add(t);
-                t.Start(c);
+                t.Start(client);
             }
         }
         public void handleClient(object client)
         {
-            Client c = client as Client;
+            TcpClient tcpClient = client as TcpClient;
+            Client c = new Client(tcpClient);
+            while(c.readHeader());
         }
         public void closeEverything()
         {

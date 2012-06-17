@@ -83,7 +83,7 @@ namespace SchedulerClient
         }
         public void LoginAction(object sender, RoutedEventArgs args)
         {
-            LoginBtn.IsEnabled = false;
+            singleton.Connect();
             XDocument xdoc = new XDocument();
             XElement root = new XElement("message");
             XElement userLogin = new XElement("user_login");

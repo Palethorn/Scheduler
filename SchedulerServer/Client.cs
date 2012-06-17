@@ -21,9 +21,9 @@ namespace SchedulerServer
         XDocument xdoc;
         MessageFormatter formatter;
         StreamWriter sw;
+        DateTime now;
         string sessionId;
         string userId;
-        string cacheFolder;
         public Client(TcpClient client)
         {
             singleton = Singleton.Instance;
@@ -33,7 +33,6 @@ namespace SchedulerServer
             logIt();
             clientStream = client.GetStream();
             adapter = new DbAdapter();
-            while(readHeader());
         }
         public void logIt()
         {
@@ -95,18 +94,36 @@ namespace SchedulerServer
                         xdoc = readMessage(Int32.Parse(content_length));
                         addTask(xdoc);
                     }
+                    if (reqType == "remove_task")
+                    {
+                        content_length = header.Element("message").Element("headers").Element("content_length").Value;
+                        xdoc = readMessage(Int32.Parse(content_length));
+                        removeTask(xdoc);
+                    }
+                    if (reqType == "edit_task")
+                    {
+                        content_length = header.Element("message").Element("headers").Element("content_length").Value;
+                        xdoc = readMessage(Int32.Parse(content_length));
+                        editTask(xdoc);
+                    }
+                    if (reqType == "register_request")
+                    {
+                        content_length = header.Element("message").Element("headers").Element("content_length").Value;
+                        xdoc = readMessage(Int32.Parse(content_length));
+                        addUser(xdoc);
+                    }
                 }
             }
             catch (Exception e)
             {
                 singleton.log("Invalid header.");
-                //Dictionary<string, string> keyValue = new Dictionary<string,string>();
-                //XDocument error = formatter.createMessage("Invalid request", "error", "1");
-                //keyValue.Add("content_length", error.ToString().Length.ToString());
-                //keyValue.Add("message_type", "error");
-                //XDocument header = formatter.createHeader(keyValue);
-                //sendHeader(header);
-                //sendMessage(error);
+                Dictionary<string, string> keyValue = new Dictionary<string,string>();
+                XDocument error = formatter.createMessage("Invalid request", "popup", "1");
+                keyValue.Add("content_length", error.ToString().Length.ToString());
+                keyValue.Add("message_type", "popup");
+                XDocument header = formatter.createHeader(keyValue);
+                sendHeader(header);
+                sendMessage(error);
                 return true;
             }
             
@@ -117,15 +134,7 @@ namespace SchedulerServer
             XElement email = xdoc.Element("message").Element("user_login").Element("email");
             XElement password = xdoc.Element("message").Element("user_login").Element("password");
             
-            OdbcDataReader r = adapter.executeQuery("select email, password, iduser from user where email=\'" + email.Value + "\' and password=\'" + password.Value + "\'");
-            
-            Dictionary<string, string> dict = new Dictionary<string, string>();
-            XDocument doc = new XDocument();
-            XDocument header;
-            XElement root = new XElement("message");
-            XElement response = new XElement("login_response");
-            XElement status;
-            XElement session_id;
+            OdbcDataReader r = adapter.executeQuery("select email, password, iduser from user where email=\'" + email.Value + "\' and password=\'" + password.Value + "\'", false);
 
             if (adapter.affectedRows() == 1)
             {
@@ -138,41 +147,46 @@ namespace SchedulerServer
                     result = sha.ComputeHash(Encoding.UTF8.GetBytes(hashInput));
                     sessionId = Convert.ToBase64String(result);
                     userId = r.GetValue(2).ToString();
-
-                    status = new XElement("status", "ok");
-                    session_id = new XElement("session_id", sessionId);
-                    response.Add(status);
-                    response.Add(session_id);
                 }
-                cacheFolder = "../../../cache/" + userId + "/";
+                XDocument doc = new XDocument();
+                XElement root = new XElement("message");
+                XAttribute errorStatus = new XAttribute("error_status", "0");
+                XElement loginResponse = new XElement("login_response");
+                XElement status = new XElement("status", "ok");
+                root.Add(errorStatus);
+                root.Add(loginResponse);
+                loginResponse.Add(status);
+                doc.Add(root);
+                Dictionary<string, string> dict = new Dictionary<string, string>();
+                dict.Add("content_length", doc.ToString().Length.ToString());
+                dict.Add("message_type", "login_status");
+                XDocument header = formatter.createHeader(dict);
+                sendHeader(header);
+                sendMessage(doc);
             }
             else
             {
-                status = new XElement("status", "error");
-                response.Add(status);
-            }
-                root.Add(response);
-                doc.Add(root);
+                XDocument doc = formatter.createMessage("Wrong username or password.", "popup", "1");
+                Dictionary<string, string> dict = new Dictionary<string, string>();
                 dict.Add("content_length", doc.ToString().Length.ToString());
-                dict.Add("message_type", "login_status");
-                header = formatter.createHeader(dict);
+                dict.Add("message_type", "popup");
+                XDocument header = formatter.createHeader(dict);
                 sendHeader(header);
                 sendMessage(doc);
+            }
         }
         public void addTask(XDocument xdoc)
         {
             XDocument message;
             XDocument header;
             Dictionary<string, string> headers = new Dictionary<string,string>();
-            
             string title = xdoc.Element("message").Element("task").Element("title") != null ? xdoc.Element("message").Element("task").Element("title").Value : "\'\'";
             string notes = xdoc.Element("message").Element("task").Element("notes") != null ? xdoc.Element("message").Element("task").Element("notes").Value : "\'\'";
             string startdatetime = xdoc.Element("message").Element("task").Element("startdatetime") != null ? xdoc.Element("message").Element("task").Element("startdatetime").Value : "\'\'";
             string enddatetime = xdoc.Element("message").Element("task").Element("enddatetime") != null ? xdoc.Element("message").Element("task").Element("enddatetime").Value : "\'\'";
             string place = xdoc.Element("message").Element("task").Element("place") != null ? xdoc.Element("message").Element("task").Element("place").Value : "\'\'";
             
-            OdbcDataReader r = adapter.executeQuery("insert into scheduler.task(title, notes, startdatetime, enddatetime, place) values(\'" + title + "\', \'" + notes + "\', \'" + startdatetime + "\', \'" + enddatetime + "\', \'" + place + "\')");
-            updateCache(xdoc.Element("message").Element("task"));
+            OdbcDataReader r = adapter.executeQuery("insert ignore into scheduler.task(title, notes, startdatetime, enddatetime, place, fkuser) values(\'" + title + "\', \'" + notes + "\', \'" + startdatetime + "\', \'" + enddatetime + "\', \'" + place + "\', " + userId + ")", true);
             if (adapter.affectedRows() > 0)
             {
                 message = formatter.createMessage("Task added.", "popup", "0");
@@ -181,73 +195,106 @@ namespace SchedulerServer
             }
             else
             {
-                message = formatter.createMessage("Error while adding task.", "error", "1");
+                message = formatter.createMessage("Error while adding task.", "popup", "1");
                 headers.Add("content_length", message.ToString().Length.ToString());
-                headers.Add("message_type", "error");
+                headers.Add("message_type", "popup");
             }
-            
             header = formatter.createHeader(headers);
             sendHeader(header);
             sendMessage(message);
+            getTasks();
         }
-        public void updateCache(XElement task)
+        public void removeTask(XDocument xdoc)
         {
-            XDocument xdoc;
-            try
+            string id = xdoc.Element("message").Element("task").Element("id") != null ? xdoc.Element("message").Element("task").Element("id").Value : "-1";
+            adapter.executeQuery("delete from task where idtask=" + id + " and fkuser=" + userId, true);
+            getTasks();
+        }
+        public void editTask(XDocument xdoc)
+        {
+            string id = xdoc.Element("message").Element("task").Element("id") != null ? xdoc.Element("message").Element("task").Element("id").Value : "\'\'";
+            string title = xdoc.Element("message").Element("task").Element("title") != null ? xdoc.Element("message").Element("task").Element("title").Value : "\'\'";
+            string notes = xdoc.Element("message").Element("task").Element("notes") != null ? xdoc.Element("message").Element("task").Element("notes").Value : "\'\'";
+            string startdatetime = xdoc.Element("message").Element("task").Element("startdatetime") != null ? xdoc.Element("message").Element("task").Element("startdatetime").Value : "\'\'";
+            string enddatetime = xdoc.Element("message").Element("task").Element("enddatetime") != null ? xdoc.Element("message").Element("task").Element("enddatetime").Value : "\'\'";
+            string place = xdoc.Element("message").Element("task").Element("place") != null ? xdoc.Element("message").Element("task").Element("place").Value : "\'\'";
+
+            string query = "update task set" +
+                " title=\'" + title +
+                "\', notes=\'" + notes +
+                "\', startdatetime=\'" + startdatetime +
+                "\', enddatetime=\'" + enddatetime +
+                "\', place=\'" + place +
+                "\' where idtask=" + id +
+                " and fkuser=" + userId;
+            adapter.executeQuery(query, true);
+            getTasks();
+        }
+        public void addUser(XDocument xdoc)
+        {
+            string name, lastName, email, password;
+            XElement user = xdoc.Element("message").Element("user");
+            name = user.Element("first_name").Value;
+            lastName = user.Element("last_name").Value;
+            email = user.Element("email").Value;
+            password = user.Element("password").Value;
+            OdbcDataReader r = adapter.executeQuery("insert ignore into user(first_name, last_name, email, password, fkuser_type) values(\'" + name + "\', \'" + lastName + "\', \'" + email + "\', \'" + password + "\', 2)", true);
+            XDocument message;
+            XDocument header;
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            if (adapter.affectedRows() > 0)
             {
-                xdoc = XDocument.Load(cacheFolder + "tasks.xml");
-                xdoc.Element("message").Element("tasks").Add(task);
-                writeCache(xdoc.ToString(), cacheFolder + "tasks.xml");
+                message = formatter.createMessage("You have successfully registered.", "popup", "0");
+                dict.Add("content_length", message.ToString().Length.ToString());
+                dict.Add("message_type", "popup");
+                header = formatter.createHeader(dict);
             }
-            catch(Exception e)
-            {}
+            else
+            {
+                message = formatter.createMessage("Could not register.", "popup", "1");
+                dict.Add("content_length", message.ToString().Length.ToString());
+                dict.Add("message_type", "popup");
+                header = formatter.createHeader(dict);
+            }
+            sendHeader(header);
+            sendMessage(message);
         }
         public void getTasks()
         {
             XDocument header;
             XDocument doc;
-            if (!File.Exists(cacheFolder + "tasks.xml"))
-            {
-                OdbcDataReader r = adapter.executeQuery("select title, notes, startdatetime, enddatetime, place from task where fkuser=" + userId);
+            OdbcDataReader r = adapter.executeQuery("select idtask, title, notes, startdatetime, enddatetime, place from task where fkuser=" + userId, false);
 
-                if (adapter.affectedRows() > 0)
+            if (adapter.affectedRows() > 0)
+            {
+                doc = formatter.formatTasks(r);
+                IEnumerable<XElement> tasks = doc.Element("message").Element("tasks").Elements("task");
+                List<XElement> tmp = new List<XElement>();
+                foreach (XElement task in tasks)
                 {
-                    doc = formatter.formatTasks(r);
-                    writeCache(doc.ToString(), cacheFolder + "tasks.xml");
+                    DateTime d = DateTime.ParseExact(task.Element("enddatetime").Value, "ddMMyyyyhhmmss", null);
+                    if (d < DateTime.Now)
+                    {
+                        r = adapter.executeQuery("delete from task where idtask=" + task.Element("id").Value + " and fkuser=" + userId, true);
+                        tmp.Add(task);
+                    }
                 }
-                else
+                foreach(XElement t in tmp)
                 {
-                    doc = formatter.createMessage("No tasks added.", "error", "1");
+                    t.Remove();
                 }
             }
             else
             {
-                try
-                {
-                    doc = XDocument.Load(cacheFolder + "tasks.xml");
-                }
-                catch (Exception e)
-                {
-                    doc = formatter.createMessage("Could not retrieve tasks", "error", "1");
-                }
+                doc = formatter.createMessage("No tasks added.", "popup", "1");
             }
+
             Dictionary<string, string> keyValue = new Dictionary<string, string>();
             keyValue.Add("content_length", doc.ToString().Length.ToString());
             keyValue.Add("message_type", "tasks");
             header = formatter.createHeader(keyValue);
             sendHeader(header);
             sendMessage(doc);
-        }
-        public void writeCache(string content, string filename)
-        {
-            if (!Directory.Exists(cacheFolder))
-            {
-                Directory.CreateDirectory(cacheFolder);
-            }
-            sw = new StreamWriter(filename, false);
-            sw.Write(content);
-            sw.Flush();
-            sw.Close();
         }
         public XDocument readMessage(int contentSize)
         {

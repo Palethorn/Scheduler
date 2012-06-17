@@ -22,6 +22,9 @@ namespace SchedulerClient
             singleton.login += loginAction;
             singleton.loginCompleted += getTasks;
             singleton.newTaskEvent += submitTask;
+            singleton.removeTaskEvent += removeTask;
+            singleton.editTaskEvent += editTask;
+            singleton.registerEvent += registerAction;
             encoder = new ASCIIEncoding();
             messageFormatter = new MessageFormatter();
             Connect(IPAddress.Parse(ip), port);
@@ -42,6 +45,24 @@ namespace SchedulerClient
             XDocument header = messageFormatter.createHeader(h);
             sendHeader(header);
             sendMessage(t);
+        }
+        public void removeTask(XDocument t)
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            dict.Add("content_length", t.ToString().Length.ToString());
+            dict.Add("request_type", "remove_task");
+            XDocument header = messageFormatter.createHeader(dict);
+            sendHeader(header);
+            sendMessage(t);
+        }
+        public void editTask(XDocument xdoc)
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            dict.Add("content_length", xdoc.ToString().Length.ToString());
+            dict.Add("request_type", "edit_task");
+            XDocument header = messageFormatter.createHeader(dict);
+            sendHeader(header);
+            sendMessage(xdoc);
         }
         public void readHeader()
         {
@@ -79,7 +100,7 @@ namespace SchedulerClient
                         }
                         if (headers.Element("message_type").Value == "popup")
                         {
-                            singleton.popup(xdoc);
+                            dispatchPopup(xdoc);
                         }
                         if (headers.Element("message_type").Value == "login_status")
                         {
@@ -96,11 +117,24 @@ namespace SchedulerClient
                 }
             }
         }
+        public void dispatchPopup(XDocument xdoc)
+        {
+            singleton.popup(xdoc.Element("message").Element("text").Value, Int32.Parse(xdoc.Element("message").Attribute("error_status").Value));
+        }
         public void loginAction(XDocument xdoc)
         {
             Dictionary<string, string> dict = new Dictionary<string, string>();
             dict.Add("content_length", xdoc.ToString().Length.ToString());
             dict.Add("request_type", "login_request");
+            XDocument header = messageFormatter.createHeader(dict);
+            sendHeader(header);
+            sendMessage(xdoc);
+        }
+        public void registerAction(XDocument xdoc)
+        {
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            dict.Add("content_length", xdoc.ToString().Length.ToString());
+            dict.Add("request_type", "register_request");
             XDocument header = messageFormatter.createHeader(dict);
             sendHeader(header);
             sendMessage(xdoc);
