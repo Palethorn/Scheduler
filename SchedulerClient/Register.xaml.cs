@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Xml.Linq;
+using System.Text.RegularExpressions;
 
 namespace SchedulerClient
 {
@@ -109,6 +110,18 @@ namespace SchedulerClient
         }
         public void register(object sender, RoutedEventArgs args)
         {
+            singleton.Connect();
+            Regex reg = new Regex("\\w+([-+.']\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*");
+            if(!reg.IsMatch(EmailInput.Text))
+            {
+                singleton.popup("Wrong email", 1);
+                return;
+            }
+            if(NameInput.Text.Length == 0 || LastNameInput.Text.Length == 0 || PasswordInput.Password.Length < 8)
+            {
+                singleton.popup("All fields must be filled", 1);
+                return;
+            }
             XDocument xdoc = new XDocument();
             XElement root = new XElement("message");
             XAttribute messageType = new XAttribute("type", "register_request");

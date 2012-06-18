@@ -48,6 +48,14 @@ namespace SchedulerClient
         {
             try
             {
+                if (client != null && client.Client.Connected)
+                {
+                    return;
+                }
+                if (listenThread != null && listenThread.IsAlive)
+                {
+                    listenThread.Abort();
+                }
                 client = new Client("127.0.0.1", 50555);
                 listenThread = new Thread(new ParameterizedThreadStart(runThread));
                 listenThread.Start(client);
