@@ -35,6 +35,7 @@ namespace SchedulerClient
             PasswordInput.GotFocus += clearInput;
             EmailInput.LostFocus += resetInput;
             PasswordInput.LostFocus += resetInput;
+            RegisterLnk.MouseUp += showRegisterWindow;
         }
         public void hide()
         {
@@ -95,6 +96,10 @@ namespace SchedulerClient
             root.Add(new XAttribute("message_type", "login_request"));
             xdoc.Add(root);
             singleton.login(xdoc);
+        }
+        public void showRegisterWindow(object sender, EventArgs args)
+        {
+            singleton.showRegister();
         }
     }
 }

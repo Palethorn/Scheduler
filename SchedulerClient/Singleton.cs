@@ -18,6 +18,7 @@ namespace SchedulerClient
         public Event loginCompleted;
         public Event exitApp;
         public Event Connect;
+        public Event showRegister;
         public DataTranferEvent newTaskEvent;
         public DataTranferEvent editTaskEvent;
         public DataTranferEvent removeTaskEvent;

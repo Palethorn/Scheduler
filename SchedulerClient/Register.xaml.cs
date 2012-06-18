@@ -19,13 +19,16 @@ namespace SchedulerClient
     /// </summary>
     public partial class Register : Window
     {
-        User user;
         Singleton singleton;
         public Register()
         {
             InitializeComponent();
             singleton = Singleton.Instance;
             singleton.exitApp += closeThis;
+            singleton.showRegister += new Event(() =>
+                {
+                    this.Visibility = Visibility.Visible;
+                });
         }
         public void ClearInput(object sender, EventArgs args)
         {
@@ -40,7 +43,7 @@ namespace SchedulerClient
                 {
                     tb.Text = "";
                 }
-                if (tb.Name == "EmailInput" && tb.Text == "Email")
+                if (tb.Name == "EmailInput" && tb.Text == "Email: example@domain.com")
                 {
                     tb.Text = "";
                 }
